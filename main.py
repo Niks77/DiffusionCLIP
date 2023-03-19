@@ -70,29 +70,29 @@ def parse_args_and_config():
     logger = logging.getLogger()
     logger.addHandler(handler1)
 
-    os.makedirs(args.exp, exist_ok=True)
+    # os.makedirs(args.exp, exist_ok=True)
     os.makedirs('checkpoint', exist_ok=True)
     os.makedirs('precomputed', exist_ok=True)
     os.makedirs('runs', exist_ok=True)
-    os.makedirs(args.exp, exist_ok=True)
-    args.image_folder = os.path.join(args.exp, 'image_samples')
-    if not os.path.exists(args.image_folder):
-        os.makedirs(args.image_folder)
-    else:
-        overwrite = False
-        if args.ni:
-            overwrite = True
-        else:
-            response = input("Image folder already exists. Overwrite? (Y/N)")
-            if response.upper() == 'Y':
-                overwrite = True
+    # os.makedirs(args.exp, exist_ok=True)
+    # args.image_folder = os.path.join(args.exp, 'image_samples')
+    # if not os.path.exists(args.image_folder):
+    #     os.makedirs(args.image_folder)
+    # else:
+    #     overwrite = False
+    #     if args.ni:
+    #         overwrite = True
+    #     else:
+    #         response = input("Image folder already exists. Overwrite? (Y/N)")
+    #         if response.upper() == 'Y':
+    #             overwrite = True
 
-        if overwrite:
-            # shutil.rmtree(args.image_folder)
-            os.makedirs(args.image_folder, exist_ok=True)
-        else:
-            print("Output image folder exists. Program halted.")
-            sys.exit(0)
+    #     if overwrite:
+    #         # shutil.rmtree(args.image_folder)
+    #         os.makedirs(args.image_folder, exist_ok=True)
+    #     else:
+    #         print("Output image folder exists. Program halted.")
+    #         sys.exit(0)
 
     # add device
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
