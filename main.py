@@ -9,131 +9,62 @@ import numpy as np
 
 from diffusionclip import DiffusionCLIP
 from configs.paths_config import HYBRID_MODEL_PATHS
+from utils.colab_utils import GoogleDrive_Dowonloader
 
 def parse_args_and_config():
-    parser = argparse.ArgumentParser(description=globals()['__doc__'])
+    img_path = 'imgs/celeb1.png'  
+    align_face = True #param {type:"boolean"}
+    edit_type = 'Pixar' #param ['Pixar', 'Neanderthal','Sketch', 'Painting by Gogh', 'Tanned',  'With makeup', 'Without makeup', 'Female → Male']
+    degree_of_change = 1
+    n_inv_step =  40#param{type: "integer"}
+    n_test_step = 6 #param [6] 
+    
+    human_gdrive_ids = {'Pixar':                   ["1IoT7kZhtaoKf1uvhYhvyqzyG2MOJsqLe", "human_pixar_t601.pth"],
+                    'Neanderthal':             ["1Uo0VI5kbATrQtckhEBKUPyRFNOcgwwne", "human_neanderthal_t601.pth"],
+                    'Painting by Gogh':        ["1NXOL8oKTGLtpTsU_Vh5h0DmMeH7WG8rQ", "human_gogh_t601.pth"],
+                    'Tanned':                  ["1k6aDDOedRxhjFsJIA0dZLi2kKNvFkSYk", "human_tanned_t201.pth"],
+                    'Female → Male':           ["1n1GMVjVGxSwaQuWxoUGQ2pjV8Fhh72eh", "human_male_t401.pth"],
+                    'Sketch':                  ["1V9HDO8AEQzfWFypng72WQJRZTSQ272gb", "human_sketch_t601.pth"],
+                    'With makeup':             ["1OL0mKK48wvaFaWGEs3GHsCwxxg7LexOh", "human_with_makeup_t301.pth"],
+                    'Without makeup':          ["157pTJBkXPoziGQdjy3SwdyeSpAjQiGRp", "human_without_makeup_t301.pth"],
+                    }
+    
+    gid = human_gdrive_ids[edit_type][0]
+    model_path = os.path.join('checkpoint', human_gdrive_ids[edit_type][1])
+    dl = GoogleDrive_Dowonloader(True)
+    dl.ensure_file_exists(gid, model_path)
 
-    # Mode
-    parser.add_argument('--clip_finetune', action='store_true')
-    parser.add_argument('--clip_latent_optim', action='store_true')
-    parser.add_argument('--edit_images_from_dataset', action='store_true')
-    parser.add_argument('--edit_one_image', action='store_true')
-    parser.add_argument('--unseen2unseen', action='store_true')
-    parser.add_argument('--clip_finetune_eff', action='store_true')
-    parser.add_argument('--edit_one_image_eff', action='store_true')
-
-    # Default
-    parser.add_argument('--config', type=str, required=True, help='Path to the config file')
-    parser.add_argument('--seed', type=int, default=1234, help='Random seed')
-    parser.add_argument('--exp', type=str, default='./runs/', help='Path for saving running related data.')
-    parser.add_argument('--comment', type=str, default='', help='A string for experiment comment')
-    parser.add_argument('--verbose', type=str, default='info', help='Verbose level: info | debug | warning | critical')
-    parser.add_argument('--ni', type=int, default=1,  help="No interaction. Suitable for Slurm Job launcher")
-    parser.add_argument('--align_face', type=int, default=1, help='align face or not')
-
-    # Text
-    parser.add_argument('--edit_attr', type=str, default=None, help='Attribute to edit defiend in ./utils/text_dic.py')
-    parser.add_argument('--src_txts', type=str, action='append', help='Source text e.g. Face')
-    parser.add_argument('--trg_txts', type=str, action='append', help='Target text e.g. Angry Face')
-    parser.add_argument('--target_class_num', type=str, default=None)
-
-    # Sampling
-    parser.add_argument('--t_0', type=int, default=400, help='Return step in [0, 1000)')
-    parser.add_argument('--n_inv_step', type=int, default=40, help='# of steps during generative pross for inversion')
-    parser.add_argument('--n_train_step', type=int, default=6, help='# of steps during generative pross for train')
-    parser.add_argument('--n_test_step', type=int, default=40, help='# of steps during generative pross for test')
-    parser.add_argument('--sample_type', type=str, default='ddim', help='ddpm for Markovian sampling, ddim for non-Markovian sampling')
-    parser.add_argument('--eta', type=float, default=0.0, help='Controls of varaince of the generative process')
-
-    # Train & Test
-    parser.add_argument('--do_train', type=int, default=1, help='Whether to train or not during CLIP finetuning')
-    parser.add_argument('--do_test', type=int, default=1, help='Whether to test or not during CLIP finetuning')
-    parser.add_argument('--save_train_image', type=int, default=1, help='Wheter to save training results during CLIP fineuning')
-    parser.add_argument('--bs_train', type=int, default=1, help='Training batch size during CLIP fineuning')
-    parser.add_argument('--bs_test', type=int, default=1, help='Test batch size during CLIP fineuning')
-    parser.add_argument('--n_precomp_img', type=int, default=100, help='# of images to precompute latents')
-    parser.add_argument('--n_train_img', type=int, default=50, help='# of training images')
-    parser.add_argument('--n_test_img', type=int, default=10, help='# of test images')
-    parser.add_argument('--model_path', type=str, default=None, help='Test model path')
-    parser.add_argument('--img_path', type=str, default=None, help='Image path to test')
-    parser.add_argument('--deterministic_inv', type=int, default=1, help='Whether to use deterministic inversion during inference')
-    parser.add_argument('--hybrid_noise', type=int, default=0, help='Whether to change multiple attributes by mixing multiple models')
-    parser.add_argument('--model_ratio', type=float, default=1, help='Degree of change, noise ratio from original and finetuned model.')
-
-
-    # Loss & Optimization
-    parser.add_argument('--clip_loss_w', type=int, default=3, help='Weights of CLIP loss')
-    parser.add_argument('--l1_loss_w', type=float, default=0, help='Weights of L1 loss')
-    parser.add_argument('--id_loss_w', type=float, default=0, help='Weights of ID loss')
-    parser.add_argument('--clip_model_name', type=str, default='ViT-B/16', help='ViT-B/16, ViT-B/32, RN50x16 etc')
-    parser.add_argument('--lr_clip_finetune', type=float, default=2e-6, help='Initial learning rate for finetuning')
-    parser.add_argument('--lr_clip_lat_opt', type=float, default=2e-2, help='Initial learning rate for latent optim')
-    parser.add_argument('--n_iter', type=int, default=1, help='# of iterations of a generative process with `n_train_img` images')
-    parser.add_argument('--scheduler', type=int, default=1, help='Whether to increase the learning rate')
-    parser.add_argument('--sch_gamma', type=float, default=1.3, help='Scheduler gamma')
-
-    args = parser.parse_args()
+    t_0 = int(model_path.split('_t')[-1].replace('.pth',''))
+    print(f'return step t_0: {t_0}')
+    exp_dir = f"runs/MANI_{img_path.split('/')[-1]}_align{align_face}"
+    os.makedirs(exp_dir, exist_ok=True)
+    args_dic = {
+    'config': 'celeba.yml', 
+    't_0': t_0, 
+    'n_inv_step': int(n_inv_step), 
+    'n_test_step': int(n_test_step),
+    'sample_type': 'ddim', 
+    'eta': 0.0,
+    'bs_test': 1, 
+    'model_path': model_path, 
+    'img_path': img_path, 
+    'deterministic_inv': 1, 
+    'hybrid_noise': 0, 
+    'n_iter': 1,  
+    'align_face': align_face, 
+    'image_folder': exp_dir,
+    'model_ratio': degree_of_change,
+    'edit_attr': None, 'src_txts': None, 'trg_txts': None,
+    }
+    
+    args = dict2namespace(args_dic)
 
     # parse config file
     with open(os.path.join('configs', args.config), 'r') as f:
         config = yaml.safe_load(f)
     new_config = dict2namespace(config)
 
-    if args.clip_finetune or args.clip_finetune_eff :
-        if args.edit_attr is not None:
-            args.exp = args.exp + f'_FT_{new_config.data.category}_{args.edit_attr}_t{args.t_0}_ninv{args.n_inv_step}_ngen{args.n_train_step}_id{args.id_loss_w}_l1{args.l1_loss_w}_lr{args.lr_clip_finetune}'
-        else:
-            args.exp = args.exp + f'_FT_{new_config.data.category}_{args.trg_txts}_t{args.t_0}_ninv{args.n_inv_step}_ngen{args.n_train_step}_id{args.id_loss_w}_l1{args.l1_loss_w}_lr{args.lr_clip_finetune}'
-    elif args.clip_latent_optim:
-        if args.edit_attr is not None:
-            args.exp = args.exp + f'_LO_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_{args.edit_attr}_t{args.t_0}_ninv{args.n_inv_step}_ngen{args.n_train_step}_id{args.id_loss_w}_l1{args.l1_loss_w}_lr{args.lr_clip_lat_opt}'
-        else:
-            args.exp = args.exp + f'_LO_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_{args.trg_txts}_t{args.t_0}_ninv{args.n_inv_step}_ngen{args.n_train_step}_id{args.id_loss_w}_l1{args.l1_loss_w}_lr{args.lr_clip_lat_opt}'
-    elif args.edit_images_from_dataset:
-        if args.model_path:
-            args.exp = args.exp + f'_ED_{new_config.data.category}_t{args.t_0}_ninv{args.n_inv_step}_ngen{args.n_train_step}_{os.path.split(args.model_path)[-1].replace(".pth","")}'
-        elif args.hybrid_noise:
-            hb_str = '_'
-            for i, model_name in enumerate(HYBRID_MODEL_PATHS):
-                hb_str = hb_str + model_name.split('_')[1]
-                if i != len(HYBRID_MODEL_PATHS) - 1:
-                    hb_str = hb_str + '_'
-            args.exp = args.exp + f'_ED_{new_config.data.category}_t{args.t_0}_ninv{args.n_train_step}_ngen{args.n_train_step}' + hb_str
-        else:
-            args.exp = args.exp + f'_ED_{new_config.data.category}_t{args.t_0}_ninv{args.n_train_step}_ngen{args.n_train_step}_orig'
-
-    elif args.edit_one_image:
-        if args.model_path:
-            args.exp = args.exp + f'_E1_t{args.t_0}_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_t{args.t_0}_ninv{args.n_inv_step}_{os.path.split(args.model_path)[-1].replace(".pth", "")}'
-        elif args.hybrid_noise:
-            hb_str = '_'
-            for i, model_name in enumerate(HYBRID_MODEL_PATHS):
-                hb_str = hb_str + model_name.split('_')[1]
-                if i != len(HYBRID_MODEL_PATHS) - 1:
-                    hb_str = hb_str + '_'
-            args.exp = args.exp + f'_E1_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_t{args.t_0}_ninv{args.n_train_step}' + hb_str
-        else:
-            args.exp = args.exp + f'_E1_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_t{args.t_0}_ninv{args.n_train_step}_orig'
-
-    elif args.unseen2unseen:
-        if args.model_path:
-            args.exp = args.exp + f'_U2U_t{args.t_0}_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_t{args.t_0}_ninv{args.n_inv_step}_ngen{args.n_train_step}_{os.path.split(args.model_path)[-1].replace(".pth", "")}'
-        elif args.hybrid_noise:
-            hb_str = '_'
-            for i, model_name in enumerate(HYBRID_MODEL_PATHS):
-                hb_str = hb_str + model_name.split('_')[1]
-                if i != len(HYBRID_MODEL_PATHS) - 1:
-                    hb_str = hb_str + '_'
-            args.exp = args.exp + f'_U2U_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_t{args.t_0}_ninv{args.n_train_step}_ngen{args.n_train_step}' + hb_str
-        else:
-            args.exp = args.exp + f'_U2U_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_t{args.t_0}_ninv{args.n_train_step}_ngen{args.n_train_step}_orig'
-
-    elif args.recon_exp:
-        args.exp = args.exp + f'_REC_{new_config.data.category}_{args.img_path.split("/")[-1].split(".")[0]}_t{args.t_0}_ninv{args.n_train_step}'
-    elif args.find_best_image:
-        args.exp = args.exp + f'_FOpt_{new_config.data.category}_{args.trg_txts[0]}_t{args.t_0}_ninv{args.n_train_step}'
-
-
+    
     level = getattr(logging, args.verbose.upper(), None)
     if not isinstance(level, int):
         raise ValueError('level {} not supported'.format(args.verbose))
@@ -207,20 +138,8 @@ def main():
 
     runner = DiffusionCLIP(args, config)
     try:
-        if args.clip_finetune:
-            runner.clip_finetune()
-        elif args.clip_finetune_eff:
-            runner.clip_finetune_eff()
-        elif args.clip_latent_optim:
-            runner.clip_latent_optim()
-        elif args.edit_images_from_dataset:
-            runner.edit_images_from_dataset()
-        elif args.edit_one_image:
+        if args.edit_one_image:
             runner.edit_one_image()
-        elif args.edit_one_image_eff:
-            runner.edit_one_image_eff()
-        elif args.unseen2unseen:
-            runner.unseen2unseen()
         else:
             print('Choose one mode!')
             raise ValueError
