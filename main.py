@@ -102,8 +102,8 @@ def parse_args_and_config():
     # set random seed
     # torch.manual_seed(args.seed)
     # np.random.seed(args.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args.seed)
+    # if torch.cuda.is_available():
+        # torch.cuda.manual_seed_all(args.seed)
 
     torch.backends.cudnn.benchmark = True
 
