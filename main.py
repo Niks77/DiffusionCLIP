@@ -64,17 +64,11 @@ def parse_args_and_config():
         config = yaml.safe_load(f)
     new_config = dict2namespace(config)
 
-    
-    level = getattr(logging, args.verbose.upper(), None)
-    if not isinstance(level, int):
-        raise ValueError('level {} not supported'.format(args.verbose))
-
     handler1 = logging.StreamHandler()
     formatter = logging.Formatter('%(levelname)s - %(filename)s - %(asctime)s - %(message)s')
     handler1.setFormatter(formatter)
     logger = logging.getLogger()
     logger.addHandler(handler1)
-    logger.setLevel(level)
 
     os.makedirs(args.exp, exist_ok=True)
     os.makedirs('checkpoint', exist_ok=True)
