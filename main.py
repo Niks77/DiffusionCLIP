@@ -9,10 +9,9 @@ import numpy as np
 
 from diffusionclip import DiffusionCLIP
 from configs.paths_config import HYBRID_MODEL_PATHS
-from utils.colab_utils import GoogleDrive_Dowonloader
 
 def parse_args_and_config():
-    img_path = 'imgs/celeb1.png'  
+    img_path = 'imgs/celeb2.png'  
     align_face = True #param {type:"boolean"}
     edit_type = 'Pixar' #param ['Pixar', 'Neanderthal','Sketch', 'Painting by Gogh', 'Tanned',  'With makeup', 'Without makeup', 'Female → Male']
     degree_of_change = 1
@@ -29,7 +28,11 @@ def parse_args_and_config():
                     'Without makeup':          ["157pTJBkXPoziGQdjy3SwdyeSpAjQiGRp", "human_without_makeup_t301.pth"],
                     }
     
-    gid = human_gdrive_ids[edit_type][0]
+    # gid = human_gdrive_ids[edit_type][0]
+    os.makedirs("checkpoint", exist_ok=True)
+    os.makedirs("precomputed", exist_ok=True)
+    os.makedirs("pretrained", exist_ok=True)
+    os.makedirs("runs", exist_ok=True)
     model_path = os.path.join('checkpoint', human_gdrive_ids[edit_type][1])
     # dl = GoogleDrive_Dowonloader(True)
     isExist = os.path.exists(model_path)
@@ -114,15 +117,18 @@ def main():
     print("<" * 80)
 
 
-    runner = DiffusionCLIP(args, config)
-    try:
-        if args.edit_one_image:
-            runner.edit_one_image()
-        else:
-            print('Choose one mode!')
-            raise ValueError
-    except Exception:
-        logging.error(traceback.format_exc())
+    
+    for i in range(1, 10+1):
+        args.model_ratio = i
+        runner = DiffusionCLIP(args, config)
+        try:
+            if args.edit_one_image:
+                runner.edit_one_image()
+            else:
+                print('Choose one mode!')
+                raise ValueError
+        except Exception:
+            logging.error(traceback.format_exc())
 
 
     return 0
