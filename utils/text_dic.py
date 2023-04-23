@@ -59,6 +59,7 @@ SRC_TRG_TXT_DIC = {
                ['The Jocker']),
 
 
+
     # Dog face
     'dog_nicolas': (['Dog'],
                     ['Nicolas Cage']),
@@ -121,3 +122,64 @@ SRC_TRG_TXT_DIC = {
 
 
 }
+
+newSrcPairFormat = {
+         'pair_0': ('Human', 'Cyborg'), 'pair_1': ('Human', 'Mythological Creature'), 'pair_2': ('Human', 'Robot'), 'pair_3': ('Human', 'Vampire'), 'pair_4': ('Human', 'Werewolf'), 'pair_5': ('Human', 'Mermaid/Merman'), 'pair_6': ('Human', 'Cyborg Ninja'), 'pair_7': ('Normal face', 'Cute face'), 'pair_8': ('Normal face', 'Scary face'), 'pair_9': ('Normal face', 'Grotesque face'), 'pair_10': ('Normal face', 'Anime-Style face'), 'pair_11': ('Normal face', 'Caricature face'), 'pair_12': ('Normal face', 'Zombie face'), 'pair_13': ('Normal face', 'Superhuman face'), 'pair_14': ('Normal face', 'Artistic Renderings face'), 'pair_15': ('Normal face', 'Pop Art face'), 'pair_16': ('Person', 'Robot'), 'pair_17': ('Person', 'Steampunk Style'), 'pair_18': ('Person', 'Alien'), 'pair_19': ('Male', 'Superhero'), 'pair_20': ('Male', 'Female'), 'pair_21': ('Human Eyes', 'person with Blue Eyes'), 'pair_22': ('Human Eyes', 'person with Green Eyes'), 'pair_23': ('Human Eyes', 'person with Red Eyes'), 'pair_24': ('Human Eyes', 'person with Violet Eyes'), 'pair_25': ('Human Eyes', 'Hperson with azel Eyes'), 'pair_26': ('Happy face', 'Angry face'), 'pair_27': ('Serious face', 'Funny face'), 'pair_28': ('Neutral face', 'suprised face'), 'pair_29': ('Person', 'Cleopatra'), 'pair_30': ('Person', 'Napoleon'), 'pair_31': ('Person', 'Marilyn Monroe'), 'pair_32': ('Person', 'Charlie Chaplin'), 'pair_33': ('Old', 'Young'), 'pair_34': ('Young', 'Old'), 'pair_35': ('suprised face', 'Neutral face')
+}
+
+newSrcTarPair =  {
+        
+
+'tanned': (['face'], ['tanned face']),
+'pale': (['face'], ['pale face']),
+'makeup': (['person'], ['person with makeup']),
+'no_makeup': (['person'], ['person without makeup']),
+'old': (['person'], ['old person']),
+'young': (['person'], ['young person']),
+'beards': (['person'], ['person with beards']),
+'angry': (['face'], ['angry face']),
+'surprised': (['face'], ['surprised face']),
+'smiling': (['face'], ['smiling face']),
+'blond_hair': (['person'], ['person with blond hair']),
+'red_hair': (['person'], ['person with red hair']),
+'grey_hair': (['person'], ['person with red hair']),
+'curly_hair': (['person'], ['person with curly hair']),
+'nicolas': (['Person'], ['Nicolas Cage']),
+'zuckerberg': (['Person'], ['Mark Zuckerberg']),
+'benedict': (['Person'], ['Benedict Cumberbatch']),
+'gogh': (['photo'], ['painting by Gogh']),
+'frida': (['photo'], ['self-portrait by Frida Kahlo']),
+'modigliani': (['photo'], ['Painting in Modigliani style']),
+'sketch': (['photo'], ['sketch']),
+'watercolor': (['photo'], ['Watercolor Art with Thick Brushstrokes']),
+'elf': (['Human'], ['Tolkien elf']),
+'super_saiyan': (['Human'], ['Super saiyan']),
+'pixar': (['Human'], ['3D render in the style of Pixar']),
+'neanderthal': (['Human'], ['Neanderthal']),
+'zombie': (['Human'], ['Zombie']),
+'jocker': (['Human'], ['The Jocker'])
+
+}
+import subprocess
+
+if __name__ == '__main__':
+#     pass
+#     for i in newSrcPairFormat:
+        # print(newSrcPairFormat[i][0],newSrcPairFormat[i][1])
+        subprocess.run(["python", "/home2/bagler/Clip/DiffusionCLIP/main.py", "--clip_finetune",
+                "--config", "celeba.yml",
+                "--exp", "train",
+                "--src_txts", "Female"
+                "--trg_txts", "Male",
+                "--do_train", "1",
+                "--do_test", "1",
+                "--n_train_img", "500",
+                "--n_test_img", "80",
+                "--n_iter", "5",
+                "--t_0", "500",
+                "--n_inv_step", "40",
+                "--n_train_step", "6",
+                "--n_test_step", "40",
+                "--lr_clip_finetune", "8e-6",
+                "--id_loss_w", "1",
+                "--l1_loss_w", "1"])

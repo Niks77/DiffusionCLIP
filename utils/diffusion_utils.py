@@ -102,6 +102,9 @@ def denoising_step(xt, t, t_next, *,
         xt_next = xt_next.float()
 
     elif sampling_type == 'ddim':
+        xt = xt.to(torch.device('cuda'))
+        at = at.to(torch.device('cuda'))
+        et = et.to(torch.device('cuda'))
         x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
         if eta == 0:
             xt_next = at_next.sqrt() * x0_t + (1 - at_next).sqrt() * et

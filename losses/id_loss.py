@@ -10,13 +10,15 @@ class IDLoss(nn.Module):
         print('Loading ResNet ArcFace')
         self.facenet = Backbone(input_size=112, num_layers=50, drop_ratio=0.6, mode='ir_se')
         self.facenet.load_state_dict(torch.load(MODEL_PATHS['ir_se50']))
-
         self.face_pool = torch.nn.AdaptiveAvgPool2d((112, 112))
         self.facenet.eval()
 
+
     def extract_feats(self, x):
         x = x[:, :, 35:223, 32:220]  # Crop interesting region
+        # x = torch.stack([x])
         x = self.face_pool(x)
+        x=x.to('cuda')
         x_feats = self.facenet(x)
         return x_feats
 
@@ -27,7 +29,7 @@ class IDLoss(nn.Module):
 
         x_hat_feats = self.extract_feats(x_hat)
         losses = []
-        for i in range(n_samples):
+        for i in range(1):
             loss_sample = 1 - x_hat_feats[i].dot(x_feats[i])
             losses.append(loss_sample.unsqueeze(0))
 
