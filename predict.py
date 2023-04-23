@@ -149,7 +149,7 @@ class Predictor(BasePredictor):
         with open(os.path.join("configs", args.config), "r") as f:
             config_dic = yaml.safe_load(f)
         config = dict2namespace(config_dic)
-        config.device = "cuda:0"
+        config.device = "cpu"
 
         # Edit
         runner = DiffusionCLIP(args, config)
